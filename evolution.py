@@ -1,8 +1,6 @@
 # ERRORS:
-# 4) CELLS GOES THROUGH EACH OTHER, THEY CAN NOT BE ON THE SAME PIXEL
 # 7) WHEN THE NEW GENERATION IS BEING BORN, THEY TEND TO BE IN THE MIDDLE, THEY SHOULD BE EQUALLY DISTRIBUTED ACROSS THE DISPLAY
-# 8) SOMETHING CAUSES TOO MUCH LOOP AND IT DELAYS THE BORN OF THE NEW GENERATION
-# 9) WORK ON RANDOMIZE_POSITION FUNCTION, RANDOMIZATION IS NOW BEING MADE IN THE CREATE_SCALED_CELLS BUT IT SHOULD HAVE A SEPERATE FUNCTION
+# 10) ADD MUTATION TO THE REPRODUCE FUNCTION
 
 
 import pygame
@@ -13,8 +11,9 @@ import numpy as np
 # Initialize the pygame library
 pygame.init()
 
+display_size: int = 800
 # Background size
-screen = pygame.display.set_mode((500, 500))
+screen = pygame.display.set_mode((display_size, display_size))
 
 # Display title
 pygame.display.set_caption("Evolution Simulation")
@@ -22,10 +21,11 @@ pygame.display.set_caption("Evolution Simulation")
 # Clock for the delay
 clock = pygame.time.Clock()
 
-grid_size: int = 50 # Change the create_generation loop time, regarding how many cells should be created
+grid_size: int = 80 # Change the create_generation loop time, regarding how many cells should be created
 running: bool = True
 matrix: list[list[int]] = [[0 for _ in range(grid_size)] for _ in range(grid_size)]
 speed: int = 98
+cell_count: int = 500
 
 # Dictionary of all possible colors, which effects the movement attributes
 color_mapping: dict = {
@@ -82,9 +82,9 @@ class Cell_Class:
         start_generation[self.position_x][self.position_y] == 0
         if direction == "UP" and self.position_y > 0 and not(check_occupancy(origin_cells, self.position_x, self.position_y-1)):
             self.position_y -= 1
-        elif direction == "DOWN" and self.position_y < 49 and not(check_occupancy(origin_cells, self.position_x, self.position_y+1)):
+        elif direction == "DOWN" and self.position_y < grid_size-1 and not(check_occupancy(origin_cells, self.position_x, self.position_y+1)):
             self.position_y += 1
-        elif direction == "RIGHT" and self.position_x < 49 and not(check_occupancy(origin_cells, self.position_x+1, self.position_y)):
+        elif direction == "RIGHT" and self.position_x < grid_size-1 and not(check_occupancy(origin_cells, self.position_x+1, self.position_y)):
             self.position_x += 1
         elif direction == "LEFT" and self.position_x > 0 and not(check_occupancy(origin_cells, self.position_x-1, self.position_y-1)):
             self.position_x -= 1
@@ -100,16 +100,14 @@ def check_occupancy(check_occupancy_cells: list[Cell_Class], position_x: int, po
     return occupant
 
 
-
-
 # Create a starting generation
-start_generation: list[list[int]] = matrix
+start_generation: list[list[int]] = matrix 
 def create_generation(def_matrix: list[list[int]]) -> list[list[int]]:
     def_matrix = copy.deepcopy(def_matrix)
     def_color = copy.deepcopy(colors)
     # White cells doesn't exist
     def_color.remove((255, 255, 255))
-    for i in range(grid_size*10):
+    for i in range(cell_count):
         color = random.choice(def_color)
 
         # As long as the position is not occupied, a random colored cell will be created
@@ -145,9 +143,9 @@ def create_random_cells(def_matrix: list[list[int]]) -> list[Cell_Class]:
 origin_cells = create_random_cells(start_generation)
 
 # Cells move
-def move_cells(cells: list[Cell_Class]) -> list[Cell_Class]:
-    if cells is not None:
-        for cell in cells:
+def move_cells(def_move_cells: list[Cell_Class]) -> list[Cell_Class]:
+    if def_move_cells is not None:
+        for cell in def_move_cells:
             new_cells = cell.move_cell()
         return new_cells
 
@@ -158,13 +156,12 @@ def draw(cells: list[Cell_Class]):
         value_to_find = cell.color
         # Finding the key from the value in a dictionary
         color = [key for key, value in color_mapping.items() if value == value_to_find][0]
-        #print(cell.position_x, cell.position_y)
-        if cell.position_x >= 50:
+        if cell.position_x >= 80:
             cell.position_x //= 10
-            cell.position_x -= random.randint(1, 5)
-        if cell.position_y >= 50:
+            cell.position_x -= random.randint(1, 8)
+        if cell.position_y >= 80:
             cell.position_y //= 10
-            cell.position_y -= random.randint(1, 5)
+            cell.position_y -= random.randint(1, 8)
         pygame.draw.rect(screen, color, (cell.position_x*10+1, cell.position_y*10+1, 9, 9))
 
 # Cells that are in the yellow zone, can move on to next generation
@@ -176,6 +173,7 @@ def survive(cells: list[Cell_Class]) -> list[Cell_Class]:
 
     return survivors
 
+"""#NOT IN USE
 # Scale the survivors to 500 cells
 def scale(def_scaled_cells: list[Cell_Class]) -> list[Cell_Class]:
 
@@ -207,10 +205,46 @@ def scale(def_scaled_cells: list[Cell_Class]) -> list[Cell_Class]:
     def_scaled_cells = create_scaled_cells(new_blue_count, new_orange_count, new_red_count, new_green_count, new_black_count, new_pink_count)
 
     return def_scaled_cells
+"""
+
+# Every single survivor cell creates 3 kids
+def reproduce(def_reproduced_cells: list[Cell_Class]) -> list[Cell_Class]:
+    # Color values and initialization
+    color_mapping: list[int] = [1, 2, 3, 4, 5, 6]
+    color_counts = {color: 0 for color in color_mapping}
+    
+    # Count the initial occurrences of each color
+    for cell in def_reproduced_cells:
+        if cell.color in color_mapping:
+            color_counts[cell.color] += 1
+    
+    # Calculate the updated color counts after reproduction
+    new_color_counts = color_counts.copy()
+    
+    for color in color_mapping:
+        initial_count = color_counts[color]
+        # Cell reproduces with %80 2 new cells with the same color
+        reproduced_count = sum(3 for _ in range(initial_count) if random.random() <= 0.8)
+        new_color_counts[color] += reproduced_count
+
+    new_blue_count = new_color_counts.get(5, 0)
+    new_orange_count = new_color_counts.get(2, 0)
+    new_red_count = new_color_counts.get(3, 0)
+    new_green_count = new_color_counts.get(4, 0)
+    new_black_count = new_color_counts.get(1, 0)
+    new_pink_count = new_color_counts.get(6, 0)
+    def_reproduced_cells = create_scaled_cells(new_blue_count, new_orange_count, new_red_count, new_green_count, new_black_count, new_pink_count)
+
+    return def_reproduced_cells
 
 
-#TO BE WORK ON
-#def randomize_position(cells: list[Cell_Class]) -> list[Cell_Class]:
+# Creates a random x_pos and y_pos for a single cell use
+def randomize_position() -> set[int]:
+
+    x_pos = random.randint(0, grid_size * 10 - 1)
+    y_pos = random.randint(0, grid_size * 10 - 1)
+
+    return  (x_pos, y_pos)
 
 
 # Create the new scaled cells according to survivors
@@ -234,21 +268,20 @@ def create_scaled_cells(new_blue_count, new_orange_count, new_red_count, new_gre
     for color, count in color_counts.items():
         for _ in range(count):
             while True:
-                x_pos = random.randint(0, grid_size * 10 - 1)
-                y_pos = random.randint(0, grid_size * 10 - 1)
-                position = (x_pos, y_pos)
-                
+                position = randomize_position()
+                x_pos, y_pos = position
                 if position not in used_positions:
                     cell = Cell_Class(color, x_pos, y_pos)
-                    used_positions.add(position)  # Mark this position as used
+                    # Mark this position as used
+                    used_positions.add(position)
                     cell.set_movement()
                     created_scaled_cells.append(cell)
-                    break  # Exit the loop and create the next cell
+                    # Exit the loop and create the next cell
+                    break  
 
     return created_scaled_cells
        
 counter: int = 0
-print(start_generation)
 # Main loop
 while True:
     while running:
@@ -262,10 +295,10 @@ while True:
         screen.fill((255, 255, 255))
 
         # Zone where the cells could live to the other generations
-        pygame.draw.rect(screen, (255, 255, 0), (grid_size*8, 0, 420, grid_size*10))
+        pygame.draw.rect(screen, (255, 255, 0), (grid_size*8, 0, display_size-grid_size, grid_size*10))
         # Grid of the display
-        [pygame.draw.line(screen, (0, 0, 0), (x, 0), (x, 500)) for x in range(10, 500, 10)]
-        [pygame.draw.line(screen, (0, 0, 0), (0, y), (500, y)) for y in range(10, 500, 10)]
+        [pygame.draw.line(screen, (0, 0, 0), (x, 0), (x, 800)) for x in range(10, display_size, 10)]
+        [pygame.draw.line(screen, (0, 0, 0), (0, y), (800, y)) for y in range(10, display_size, 10)]
 
         # Display the start generation at the beginning
         draw(origin_cells)
@@ -287,7 +320,7 @@ while True:
     survivors: list[Cell_Class] = survive(origin_cells)
 
     # Scale the survivors to 500
-    survivors = scale(survivors)
+    survivors = reproduce(survivors)
 
     origin_cells = survivors
 

@@ -2,14 +2,15 @@
 # 7) WHEN THE NEW GENERATION IS BEING BORN, THEY TEND TO BE IN THE MIDDLE, THEY SHOULD BE EQUALLY DISTRIBUTED ACROSS THE DISPLAY
 # 10) ADD MUTATION TO THE REPRODUCE FUNCTION
 # 11) FOOD GENERATION STAYS SAME FOR THE GENERAIONS, EACH GENERATION SHOULD BE RANDOM
-# 12) ADD SENSE ATTRIBUTE
 # 13) LEARN THE FOLLOWING 4 FUNCTIONS: MOVE_DIRECTION, GET_ALLOWED_DIRECTIONS, FIND_NEARBY_FOOD, MOVE_TOWARDS_FOOD AND MOVE_IN_DIRECTION AND ADD COMMENTS TO IT
-
+# 14) SIZE SHOULD ALSO BE REFLECTED TO THE MATRIX
+# 15) COLLUSION MECHANIC SHOULD ALSO WORK FOR BIGGER SIZES
+# 16) USE THE MATPLOT LIB TO SHOW THE GRAPHS OF ATTRIBUTES
 
 import pygame
 import random
 import copy
-import numpy as np
+import matplotlib.pyplot as plt
 
 
 # Initialize the pygame library
@@ -32,7 +33,7 @@ clock = pygame.time.Clock()
 grid_size: int = 80 # Change the create_generation loop time, regarding how many cells should be created
 running: bool = True
 matrix: list[list[int]] = [[0 for _ in range(grid_size)] for _ in range(grid_size)]
-speed: int = 95
+speed: int = 99
 cell_count: int = 500
 PURPLE: set = (128, 0, 128)
 food_creation_chance: int = 5 # in percentages (%)
@@ -63,18 +64,17 @@ class Cell_Class:
         6: "LEFT"
     }
 
-    def __init__(self, color, position_x, position_y, sense=None, move=None, feed=False, food_supply=0):
+    def __init__(self, color, position_x, position_y, size, sense, move=None, food_supply=1):
         self.color = color
         self.position_x = position_x
         self.position_y = position_y
-        self.sense = sense if sense is not None else random.randint(1, 3)
+        self.size = size
+        self.sense = sense 
         self.move = move
-        self.feed = feed
         self.food_supply = food_supply
 
     # Sets the movement attribute of the cell
     def set_movement(self):
-
         self.move = Cell_Class.movement.get(self.color, None)
 
     # Moving action of the cell
@@ -93,293 +93,26 @@ class Cell_Class:
         direction = random.choice(["UP", "RIGHT", "DOWN", "LEFT"])
         self.move_direction(direction)
 
-    # Move in one direction
-    """def move_direction(self, direction: str):
-        start_generation[self.position_x][self.position_y] == 0
-
-        if (grid_size//20 < self.position_x < grid_size//20*19) and (grid_size//20 < self.position_y < grid_size//20*19) and (random.randint(1, 100) < sense_chance):
-
-            if self.sense == 1:
-                # With sense_chance, the cell moves towards the food in all 8 directions to 1 step(including diagonal)
-                if start_generation[self.position_x-1][self.position_y] == 7:
-                    self.position_x -= 1
-                elif start_generation[self.position_x+1][self.position_y] == 7:
-                    self.position_x += 1
-                elif start_generation[self.position_x][self.position_y-1] == 7:
-                    self.position_y -= 1
-                elif start_generation[self.position_x][self.position_y+1] == 7:
-                    self.position_y += 1
-                elif start_generation[self.position_x-1][self.position_y-1] == 7:
-                    self.position_x -= 1
-                    self.position_y -= 1
-                elif start_generation[self.position_x-1][self.position_y+1] == 7:
-                    self.position_x -= 1
-                    self.position_y += 1
-                elif start_generation[self.position_x+1][self.position_y-1] == 7:
-                    self.position_x += 1
-                    self.position_y -= 1
-                elif start_generation[self.position_x+1][self.position_y+1] == 7:
-                    self.position_x += 1
-                    self.position_y += 1
-            
-            if self.sense == 2:
-                # With sense_chance, the cell moves towards the food in all 8 directions to 2 step(including diagonal)
-                if start_generation[self.position_x-1][self.position_y] == 7 or start_generation[self.position_x-2][self.position_y] == 7:
-                    self.position_x -= 1
-                elif start_generation[self.position_x+1][self.position_y] == 7 or start_generation[self.position_x+2][self.position_y] == 7:
-                    self.position_x += 1
-                elif start_generation[self.position_x][self.position_y-1] == 7 or start_generation[self.position_x][self.position_y-2] == 7:
-                    self.position_y -= 1
-                elif start_generation[self.position_x][self.position_y+1] == 7 or start_generation[self.position_x][self.position_y+2] == 7:
-                    self.position_y += 1
-                elif start_generation[self.position_x-1][self.position_y-1] == 7 or start_generation[self.position_x-2][self.position_y-2] == 7:
-                    self.position_x -= 1
-                    self.position_y -= 1
-                elif start_generation[self.position_x-1][self.position_y+1] == 7 or start_generation[self.position_x-2][self.position_y+2] == 7:
-                    self.position_x -= 1
-                    self.position_y += 1
-                elif start_generation[self.position_x+1][self.position_y-1] == 7 or start_generation[self.position_x+2][self.position_y-2] == 7:
-                    self.position_x += 1
-                    self.position_y -= 1
-                elif start_generation[self.position_x+1][self.position_y+1] == 7 or start_generation[self.position_x+2][self.position_y+2] == 7:
-                    self.position_x += 1
-                    self.position_y += 1
-                # Extra possibilites for sense=2
-                elif start_generation[self.position_x-1][self.position_y-2] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x -= 1
-                    else:
-                        self.position_y -= 1
-                elif start_generation[self.position_x+1][self.position_y-2] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x += 1
-                    else:
-                        self.position_y -= 1
-                elif start_generation[self.position_x+2][self.position_y-1] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x += 1
-                    else:
-                        self.position_y -= 1
-                elif start_generation[self.position_x+2][self.position_y+1] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x += 1
-                    else:
-                        self.position_y += 1
-                elif start_generation[self.position_x+1][self.position_y+2] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x += 1
-                    else:
-                        self.position_y += 1
-                elif start_generation[self.position_x-1][self.position_y+2] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x -= 1
-                    else:
-                        self.position_y += 1
-                elif start_generation[self.position_x-2][self.position_y+1] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x -= 1
-                    else:
-                        self.position_y += 1
-                elif start_generation[self.position_x-2][self.position_y-1] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x -= 1
-                    else:
-                        self.position_y -= 1
-
-            if self.sense == 3:
-                # With sense_chance, the cell moves towards the food in all 8 directions to 3 step(including diagonal)
-                if start_generation[self.position_x-1][self.position_y] == 7 or start_generation[self.position_x-2][self.position_y] == 7 or start_generation[self.position_x-3][self.position_y] == 7:
-                    self.position_x -= 1
-                elif start_generation[self.position_x+1][self.position_y] == 7 or start_generation[self.position_x+2][self.position_y] == 7 or start_generation[self.position_x+3][self.position_y] == 7:
-                    self.position_x += 1
-                elif start_generation[self.position_x][self.position_y-1] == 7 or start_generation[self.position_x][self.position_y-2] == 7 or start_generation[self.position_x][self.position_y-3] == 7:
-                    self.position_y -= 1
-                elif start_generation[self.position_x][self.position_y+1] == 7 or start_generation[self.position_x][self.position_y+2] == 7 or start_generation[self.position_x][self.position_y+3] == 7:
-                    self.position_y += 1
-                elif start_generation[self.position_x-1][self.position_y-1] == 7 or start_generation[self.position_x-2][self.position_y-2] == 7 or start_generation[self.position_x-3][self.position_y-3] == 7:
-                    self.position_x -= 1
-                    self.position_y -= 1
-                elif start_generation[self.position_x-1][self.position_y+1] == 7 or start_generation[self.position_x-2][self.position_y+2] == 7 or start_generation[self.position_x-3][self.position_y+3] == 7:
-                    self.position_x -= 1
-                    self.position_y += 1
-                elif start_generation[self.position_x+1][self.position_y-1] == 7 or start_generation[self.position_x+2][self.position_y-2] == 7 or start_generation[self.position_x+3][self.position_y-3] == 7:
-                    self.position_x += 1
-                    self.position_y -= 1
-                elif start_generation[self.position_x+1][self.position_y+1] == 7 or start_generation[self.position_x+2][self.position_y+2] == 7 or start_generation[self.position_x+3][self.position_y+3] == 7:
-                    self.position_x += 1
-                    self.position_y += 1
-                # Extra possibilites for sense=2
-                elif start_generation[self.position_x-1][self.position_y-2] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x -= 1
-                    else:
-                        self.position_y -= 1
-                elif start_generation[self.position_x+1][self.position_y-2] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x += 1
-                    else:
-                        self.position_y -= 1
-                elif start_generation[self.position_x+2][self.position_y-1] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x += 1
-                    else:
-                        self.position_y -= 1
-                elif start_generation[self.position_x+2][self.position_y+1] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x += 1
-                    else:
-                        self.position_y += 1
-                elif start_generation[self.position_x+1][self.position_y+2] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x += 1
-                    else:
-                        self.position_y += 1
-                elif start_generation[self.position_x-1][self.position_y+2] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x -= 1
-                    else:
-                        self.position_y += 1
-                elif start_generation[self.position_x-2][self.position_y+1] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x -= 1
-                    else:
-                        self.position_y += 1
-                elif start_generation[self.position_x-2][self.position_y-1] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x -= 1
-                    else:
-                        self.position_y -= 1
-                # Extra possibilites for sense=3
-                elif start_generation[self.position_x-1][self.position_y-3] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x -= 1
-                    else:
-                        self.position_y -= 1
-                elif start_generation[self.position_x+1][self.position_y-3] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x += 1
-                    else:
-                        self.position_y -= 1
-                elif start_generation[self.position_x+2][self.position_y-3] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x += 1
-                    else:
-                        self.position_y -= 1
-                elif start_generation[self.position_x+3][self.position_y-2] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x += 1
-                    else:
-                        self.position_y -= 1
-                elif start_generation[self.position_x+3][self.position_y-1] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x += 1
-                    else:
-                        self.position_y -= 1
-                elif start_generation[self.position_x+3][self.position_y+1] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x += 1
-                    else:
-                        self.position_y += 1
-                elif start_generation[self.position_x+3][self.position_y+2] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x += 1
-                    else:
-                        self.position_y += 1
-                elif start_generation[self.position_x+2][self.position_y+3] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x += 1
-                    else:
-                        self.position_y += 1
-                elif start_generation[self.position_x+1][self.position_y+3] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x += 1
-                    else:
-                        self.position_y += 1
-                elif start_generation[self.position_x-1][self.position_y+3] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x -= 1
-                    else:
-                        self.position_y += 1
-                elif start_generation[self.position_x-2][self.position_y+3] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x -= 1
-                    else:
-                        self.position_y += 1
-                elif start_generation[self.position_x-3][self.position_y+2] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x -= 1
-                    else:
-                        self.position_y += 1
-                elif start_generation[self.position_x-3][self.position_y+1] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x -= 1
-                    else:
-                        self.position_y += 1
-                elif start_generation[self.position_x-3][self.position_y-1] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x -= 1
-                    else:
-                        self.position_y -= 1
-                elif start_generation[self.position_x-3][self.position_y-2] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x -= 1
-                    else:
-                        self.position_y -= 1
-                elif start_generation[self.position_x-2][self.position_y-3] == 7:
-                    # Possible to directions in x(=0) or y(=1) direction
-                    if random.randint(0, 1) == 0:
-                        self.position_x -= 1
-                    else:
-                        self.position_y -= 1
-                
-
-        else:
-            if direction == "UP" and self.position_y > 0 and not(check_occupancy(origin_cells, self.position_x, self.position_y-1)):
-                self.position_y -= 1
-            elif direction == "DOWN" and self.position_y < grid_size-1 and not(check_occupancy(origin_cells, self.position_x, self.position_y+1)):
-                self.position_y += 1
-            elif direction == "RIGHT" and self.position_x < grid_size-1 and not(check_occupancy(origin_cells, self.position_x+1, self.position_y)):
-                self.position_x += 1
-            elif direction == "LEFT" and self.position_x > 0 and not(check_occupancy(origin_cells, self.position_x-1, self.position_y-1)):
-                self.position_x -= 1
-            if start_generation[self.position_x][self.position_y] == 7:
-                self.feed = self.eat_food()
-
-        start_generation[self.position_x][self.position_y] = self.color"""
-    
     def move_direction(self, direction: str):
-        start_generation[self.position_x][self.position_y] = 0
+
+        if (grid_size//20 < self.position_x < grid_size//20*19) and (grid_size//20 < self.position_y < grid_size//20*19):
+            if self.size == 1:
+                start_generation[self.position_x][self.position_y] = 0
+            elif self.size == 2:
+                start_generation[self.position_x][self.position_y] = 0
+                start_generation[self.position_x+1][self.position_y] = 0
+                start_generation[self.position_x+1][self.position_y+1] = 0
+                start_generation[self.position_x][self.position_y+1] = 0
+            elif self.size == 3:
+                start_generation[self.position_x][self.position_y] = 0
+                start_generation[self.position_x][self.position_y+1] = 0
+                start_generation[self.position_x+1][self.position_y] = 0
+                start_generation[self.position_x+1][self.position_y+1] = 0
+                start_generation[self.position_x+2][self.position_y] = 0
+                start_generation[self.position_x+2][self.position_y+1] = 0
+                start_generation[self.position_x+2][self.position_y+2] = 0
+                start_generation[self.position_x+1][self.position_y+2] = 0
+                start_generation[self.position_x][self.position_y+2] = 0
 
         allowed_directions = self.get_allowed_directions()
 
@@ -391,9 +124,28 @@ class Cell_Class:
             self.move_in_direction(direction, allowed_directions)
 
         if start_generation[self.position_x][self.position_y] == 7:
-            self.feed = self.eat_food()
+            self.add_food_supply()
+            
+        if (grid_size//20 < self.position_x < grid_size//20*19) and (grid_size//20 < self.position_y < grid_size//20*19):
+            
+            if self.size == 1:
+                start_generation[self.position_x][self.position_y] = self.color
+            elif self.size == 2:
+                start_generation[self.position_x][self.position_y] = self.color
+                start_generation[self.position_x+1][self.position_y] = self.color + 10
+                start_generation[self.position_x+1][self.position_y+1] = self.color + 10
+                start_generation[self.position_x][self.position_y+1] = self.color + 10
+            elif self.size == 3:
+                start_generation[self.position_x][self.position_y] = self.color 
+                start_generation[self.position_x][self.position_y+1] = self.color + 10
+                start_generation[self.position_x+1][self.position_y] = self.color + 10
+                start_generation[self.position_x+1][self.position_y+1] = self.color + 10
+                start_generation[self.position_x+2][self.position_y] = self.color + 10
+                start_generation[self.position_x+2][self.position_y+1] = self.color + 10
+                start_generation[self.position_x+2][self.position_y+2] = self.color + 10
+                start_generation[self.position_x+1][self.position_y+2] = self.color + 10
+                start_generation[self.position_x][self.position_y+2] = self.color + 10
 
-        start_generation[self.position_x][self.position_y] = self.color
 
     def get_allowed_directions(self):
         if self.color == 2:  # Orange (ALL)
@@ -460,15 +212,22 @@ class Cell_Class:
         if 0 <= new_x < grid_size and 0 <= new_y < grid_size and not check_occupancy(origin_cells, new_x, new_y):
             self.position_x, self.position_y = new_x, new_y
 
-
     # Eating food on the same location
-    def eat_food(self):
-        #print(str(self.position_x) + " " + str(self.position_y) + " has eaten food")
-        return True
+    def add_food_supply(self):
+        if self.food_supply != 3:
+            self.food_supply += 1
 
     def set_sense(self):
         self.sense = random.randint(1, 3)
 
+    def use_food(self):
+        self.food_supply -= 1
+
+    def check_size(self):
+        if self.food_supply == 3 and self.size != 3:
+            self.size += 1
+        elif self.food_supply == 0 and self.size != 0:
+            self.size -= 1
 
 # Check if the movement can be done, since the pixel is unoccupied
 def check_occupancy(check_occupancy_cells: list[Cell_Class], position_x: int, position_y: int) -> bool:
@@ -478,6 +237,13 @@ def check_occupancy(check_occupancy_cells: list[Cell_Class], position_x: int, po
             occupant = True
     
     return occupant
+
+"""def check_occupancy(def_start_generation: list[list[int]], position_x: int, position_y: int) -> bool:
+    occupant: bool = False
+    if def_start_generation[position_x] != 0 and def_start_generation[position_y] != 0:
+        occupant = True
+    
+    return occupant"""
 
 
 # Create a starting generation
@@ -521,7 +287,7 @@ def create_random_cells(def_matrix: list[list[int]]) -> list[Cell_Class]:
             if def_matrix[x][y] != 0:
                
                # Cell with color attribute is creted according to the value of the matrix[x][y]
-               cell = Cell_Class(def_matrix[x][y], x, y)
+               cell = Cell_Class(def_matrix[x][y], x, y, 1, random.randint(1, 3))
                # Set the movement order according to color of itself
                cell.set_movement()
                # After setting all the attributes, add the cell to the "cells" list
@@ -556,83 +322,44 @@ def draw(cells: list[Cell_Class]):
         if cell.position_y >= 80:
             cell.position_y //= 10
             cell.position_y -= random.randint(1, 8)
-        pygame.draw.rect(screen, color, (cell.position_x*10+1, cell.position_y*10+1, 9, 9))
+        pygame.draw.rect(screen, color, (cell.position_x*10+1, cell.position_y*10+1, 9+(cell.size-1)*10, 9+(cell.size-1)*10))
 
 
 # Cells that are in the yellow zone, can move on to next generation
 def survive(cells: list[Cell_Class]) -> list[Cell_Class]:
     survivors: list[Cell_Class] = []
     for cell in cells:
-        if ((cell.position_x >= grid_size*19/20 or cell.position_x <= grid_size/20) or (cell.position_y >= grid_size*19/20 or cell.position_y <= grid_size/20)) and cell.feed == True:
+        if ((cell.position_x >= grid_size*19/20 or cell.position_x <= grid_size/20) or (cell.position_y >= grid_size*19/20 or cell.position_y <= grid_size/20)) and cell.food_supply > 0:
             survivors.append(cell)
     print(len(survivors))
     return survivors
 
 
-"""#NOT IN USE SCALING FUNCTION
-# Scale the survivors to 500 cells
-def scale(def_scaled_cells: list[Cell_Class]) -> list[Cell_Class]:
-
-    # Color values
-    color_mapping: list[int] = [1, 2, 3, 4, 5, 6]
-    # Color counts in the cell
-    color_counts = np.zeros(len(color_mapping), dtype=int)
-
-    # Count the occurrences of each color in the cell
-    for cell in def_scaled_cells:
-        if cell.color in color_mapping:
-            color_counts[color_mapping.index(cell.color)] += 1
-
-    # Total count of cells
-    total_count = np.sum(color_counts)
-
-    # Calculate probabilities and scale to total_cells
-    probabilities: float = color_counts / total_count
-    scaled_counts = np.round(probabilities * 500).astype(int)
-
-    # Adjust for rounding error
-    diff: int = 500 - np.sum(scaled_counts)
-    if diff != 0:
-        max_index: int = np.argmax(probabilities)
-        scaled_counts[max_index] += diff
-
-    # Seperate the scaled counts from the list
-    new_black_count, new_orange_count, new_red_count, new_green_count, new_blue_count, new_pink_count = scaled_counts
-    def_scaled_cells = create_scaled_cells(new_blue_count, new_orange_count, new_red_count, new_green_count, new_black_count, new_pink_count)
-
-    return def_scaled_cells
-"""
-
-
-# Every single survivor cell creates 3 kids
+# Every single survivor cell creates 2 kids
 def reproduce(def_reproduced_cells: list[Cell_Class]) -> list[Cell_Class]:
-    # Color values and initialization
-    color_mapping: list[int] = [1, 2, 3, 4, 5, 6]
-    color_counts = {color: 0 for color in color_mapping}
+    new_generation = []
     
-    # Count the initial occurrences of each color
-    for cell in def_reproduced_cells:
-        if cell.color in color_mapping:
-            color_counts[cell.color] += 1
-    
-    # Calculate the updated color counts after reproduction
-    new_color_counts = color_counts.copy()
-    
-    for color in color_mapping:
-        initial_count = color_counts[color]
-        # Cell reproduces with %80 2 new cells with the same color
-        reproduced_count = sum(3 for _ in range(initial_count) if random.random() <= 0.8)
-        new_color_counts[color] += reproduced_count
+    for parent in def_reproduced_cells:
+        # Add the parent to the new generation
+        parent.position_x, parent.position_y = randomize_position()
+        new_generation.append(parent)
+        
+        # 80% chance to reproduce
+        if random.random() <= 0.8:
+            for _ in range(2):  # Create 2 offspring
+                # Create a new cell with the same color as the parent
+                offspring = Cell_Class(parent.color, *randomize_position(), parent.size, parent.sense)
+                offspring.set_movement()
+                
+                # Mutate the sense attribute
+                if random.random() <= 0.1:  # 10% chance of mutation
+                    offspring.sense = random.randint(1, 3)
+                else:
+                    offspring.sense = parent.sense
+                
+                new_generation.append(offspring)
 
-    new_blue_count = new_color_counts.get(5, 0)
-    new_orange_count = new_color_counts.get(2, 0)
-    new_red_count = new_color_counts.get(3, 0)
-    new_green_count = new_color_counts.get(4, 0)
-    new_pink_count = new_color_counts.get(6, 0)
-    def_reproduced_cells = create_scaled_cells(new_blue_count, new_orange_count, new_red_count, new_green_count, new_pink_count)
-
-    return def_reproduced_cells
-
+    return new_generation
 
 # Creates a random x_pos and y_pos for a single cell use
 def randomize_position() -> set[int]:
@@ -735,6 +462,10 @@ while True:
 
         if counter == 1:
             start_generation = create_food(start_generation)
+            for cell in origin_cells:
+                #cell.check_size()
+                cell.use_food()
+                print(cell.food_supply)
         draw_food(start_generation)
         
         # Display the start generation at the beginning

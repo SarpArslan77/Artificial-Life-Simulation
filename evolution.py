@@ -1,6 +1,8 @@
 # ERRORS:
 # 7) WHEN THE NEW GENERATION IS BEING BORN, THEY TEND TO BE IN THE MIDDLE, THEY SHOULD BE EQUALLY DISTRIBUTED ACROSS THE DISPLAY
 # 10) ADD MUTATION TO THE REPRODUCE FUNCTION
+# 11) FOOD GENERATION STAYS SAME FOR THE GENERAIONS, EACH GENERATION SHOULD BE RANDOM
+# 12) ADD SENSE ATTRIBUTE
 
 
 import pygame
@@ -24,20 +26,25 @@ clock = pygame.time.Clock()
 grid_size: int = 80 # Change the create_generation loop time, regarding how many cells should be created
 running: bool = True
 matrix: list[list[int]] = [[0 for _ in range(grid_size)] for _ in range(grid_size)]
-speed: int = 98
+speed: int = 70
 cell_count: int = 500
+PURPLE: set = (128, 0, 128)
+food_creation_chance: int = 5 # in percentages (%)
+round_limit: int = 100
+sense_chance: int = 20
 
 # Dictionary of all possible colors, which effects the movement attributes
-color_mapping: dict = {
+color_mapping_cells: dict = {
     (0, 0, 0): 1,      # BLACK, stays still
     (245, 180, 70): 2, # ORANGE, moves in every direction
     (255, 0, 0): 3,     # RED, moves only upwards
-    (0, 255, 0): 4,     # GREEN, moves only downwards
+    (100, 255, 0): 4,     # GREEN, moves only downwards
     (0, 0, 255): 5,     # BLUE, moves only to right
     (255, 192, 203): 6,  # PINK, moves only to left
     (255, 255, 255): 0, # WHITE, dead cell
 }
-colors: list[int] = list(color_mapping.keys())
+
+colors: list[int] = list(color_mapping_cells.keys())
 
 # Cell class with its attributes
 class Cell_Class:
@@ -50,11 +57,13 @@ class Cell_Class:
         6: "LEFT"
     }
 
-    def __init__(self, color, position_x, position_y, move=None):
+    def __init__(self, color, position_x, position_y, sense=1, move=None, feed=False):
         self.color = color
-        self.move = move
         self.position_x = position_x
         self.position_y = position_y
+        self.sense = sense
+        self.move = move
+        self.feed = feed
 
     # Sets the movement attribute of the cell
     def set_movement(self):
@@ -80,15 +89,91 @@ class Cell_Class:
     # Move in one direction
     def move_direction(self, direction: str):
         start_generation[self.position_x][self.position_y] == 0
-        if direction == "UP" and self.position_y > 0 and not(check_occupancy(origin_cells, self.position_x, self.position_y-1)):
-            self.position_y -= 1
-        elif direction == "DOWN" and self.position_y < grid_size-1 and not(check_occupancy(origin_cells, self.position_x, self.position_y+1)):
-            self.position_y += 1
-        elif direction == "RIGHT" and self.position_x < grid_size-1 and not(check_occupancy(origin_cells, self.position_x+1, self.position_y)):
-            self.position_x += 1
-        elif direction == "LEFT" and self.position_x > 0 and not(check_occupancy(origin_cells, self.position_x-1, self.position_y-1)):
-            self.position_x -= 1
+
+        if (grid_size//20 < self.position_x < grid_size//20*19) and (grid_size//20 < self.position_y < grid_size//20*19) and (random.randint(1, 100) < sense_chance):
+
+            if self.sense == 1:
+                # With sense_chance, the cell moves towards the food in all 8 directions(including diagonal)
+                    if self.position_x > 0:
+                        if start_generation[self.position_x-1][self.position_y] == 7:
+                            self.position_x -= 1
+                    if self.position_x < grid_size-1:
+                        if start_generation[self.position_x+1][self.position_y] == 7:
+                            self.position_x += 1
+                    if self.position_y > 0:
+                        if start_generation[self.position_x][self.position_y-1] == 7:
+                            self.position_y -= 1
+                    if self.position_y < grid_size-1:
+                        if start_generation[self.position_x][self.position_y+1] == 7:
+                            self.position_y += 1
+                    if self.position_x > 0 and self.position_y > 0:
+                        if start_generation[self.position_x-1][self.position_y-1] == 7:
+                            self.position_x -= 1
+                            self.position_y -= 1
+                    if self.position_x > 0 and self.position_y < grid_size-1:
+                        if start_generation[self.position_x-1][self.position_y+1] == 7:
+                            self.position_x -= 1
+                            self.position_y += 1
+                    if self.position_x < grid_size-1 and self.position_y > 0:
+                        if start_generation[self.position_x+1][self.position_y-1] == 7:
+                            self.position_x += 1
+                            self.position_y -= 1
+                    if self.position_x < grid_size-1 and self.position_y < grid_size-1:
+                        if start_generation[self.position_x+1][self.position_y+1] == 7:
+                            self.position_x += 1
+                            self.position_y += 1
+            
+            if self.sense == 2:
+                if self.position_x > 0:
+                    if start_generation[self.position_x-1][self.position_y] == 7 or start_generation[self.position_x-2][self.position_y] == 7:
+                        self.position_x -= 1
+                if self.position_x < grid_size-1:
+                    if start_generation[self.position_x+1][self.position_y] == 7:
+                        self.position_x += 1
+                if self.position_y > 0:
+                    if start_generation[self.position_x][self.position_y-1] == 7:
+                        self.position_y -= 1
+                if self.position_y < grid_size-1:
+                    if start_generation[self.position_x][self.position_y+1] == 7:
+                        self.position_y += 1
+                if self.position_x > 0 and self.position_y > 0:
+                    if start_generation[self.position_x-1][self.position_y-1] == 7:
+                        self.position_x -= 1
+                        self.position_y -= 1
+                if self.position_x > 0 and self.position_y < grid_size-1:
+                    if start_generation[self.position_x-1][self.position_y+1] == 7:
+                        self.position_x -= 1
+                        self.position_y += 1
+                if self.position_x < grid_size-1 and self.position_y > 0:
+                    if start_generation[self.position_x+1][self.position_y-1] == 7:
+                        self.position_x += 1
+                        self.position_y -= 1
+                if self.position_x < grid_size-1 and self.position_y < grid_size-1:
+                    if start_generation[self.position_x+1][self.position_y+1] == 7:
+                        self.position_x += 1
+                        self.position_y += 1
+
+        else:
+            if direction == "UP" and self.position_y > 0 and not(check_occupancy(origin_cells, self.position_x, self.position_y-1)):
+                self.position_y -= 1
+            elif direction == "DOWN" and self.position_y < grid_size-1 and not(check_occupancy(origin_cells, self.position_x, self.position_y+1)):
+                self.position_y += 1
+            elif direction == "RIGHT" and self.position_x < grid_size-1 and not(check_occupancy(origin_cells, self.position_x+1, self.position_y)):
+                self.position_x += 1
+            elif direction == "LEFT" and self.position_x > 0 and not(check_occupancy(origin_cells, self.position_x-1, self.position_y-1)):
+                self.position_x -= 1
+            if start_generation[self.position_x][self.position_y] == 7:
+                self.feed = self.eat_food()
+
         start_generation[self.position_x][self.position_y] = self.color
+
+    # Eating food on the same location
+    def eat_food(self):
+        #print(str(self.position_x) + " " + str(self.position_y) + " has eaten food")
+        return True
+
+
+
 
 # Check if the movement can be done, since the pixel is unoccupied
 def check_occupancy(check_occupancy_cells: list[Cell_Class], position_x: int, position_y: int) -> bool:
@@ -99,29 +184,38 @@ def check_occupancy(check_occupancy_cells: list[Cell_Class], position_x: int, po
     
     return occupant
 
-
 # Create a starting generation
 start_generation: list[list[int]] = matrix 
 def create_generation(def_matrix: list[list[int]]) -> list[list[int]]:
     def_matrix = copy.deepcopy(def_matrix)
     def_color = copy.deepcopy(colors)
-    # White cells doesn't exist
+    # White cells and food doesn't exist in cell generation
     def_color.remove((255, 255, 255))
     for i in range(cell_count):
         color = random.choice(def_color)
 
         # As long as the position is not occupied, a random colored cell will be created
         while True:
-            x_pos = random.randint(0, grid_size-1)
-            y_pos = random.randint(0, grid_size-1)
+            spawn_location_chance = random.randint(0, 3)
+            if spawn_location_chance == 0:
+                x_pos = random.randint(grid_size//20*19, grid_size-1)
+                y_pos = random.randint(0, grid_size-1)
+            elif spawn_location_chance == 1:
+                x_pos = random.randint(0, grid_size//20)
+                y_pos = random.randint(0, grid_size-1)  
+            elif spawn_location_chance == 2:
+                x_pos = random.randint(0, grid_size-1)  
+                y_pos = random.randint(0, grid_size//20)
+            else:
+                x_pos = random.randint(0, grid_size-1)
+                y_pos = random.randint(grid_size//20*19, grid_size-1)
 
             if def_matrix[x_pos][y_pos] == 0:
-                def_matrix[x_pos][y_pos] = color_mapping[color]
+                def_matrix[x_pos][y_pos] = color_mapping_cells[color]
                 break
 
     return def_matrix
 start_generation = create_generation(matrix)
-
 
 # Creates cells through the "Cell Class" with attributes and saves them in a list
 origin_cells = []
@@ -144,18 +238,22 @@ origin_cells = create_random_cells(start_generation)
 
 # Cells move
 def move_cells(def_move_cells: list[Cell_Class]) -> list[Cell_Class]:
-    if def_move_cells is not None:
+    if def_move_cells:
         for cell in def_move_cells:
             new_cells = cell.move_cell()
         return new_cells
+    else:
+        print("The cells are gone extinct")
+        exit()
+
 
 # Draw the cells on the grid
 def draw(cells: list[Cell_Class]):
-    #print("In draw there are cells amount of" + str(len(cells)))
+
     for cell in cells:
         value_to_find = cell.color
         # Finding the key from the value in a dictionary
-        color = [key for key, value in color_mapping.items() if value == value_to_find][0]
+        color = [key for key, value in color_mapping_cells.items() if value == value_to_find][0]
         if cell.position_x >= 80:
             cell.position_x //= 10
             cell.position_x -= random.randint(1, 8)
@@ -168,9 +266,9 @@ def draw(cells: list[Cell_Class]):
 def survive(cells: list[Cell_Class]) -> list[Cell_Class]:
     survivors: list[Cell_Class] = []
     for cell in cells:
-        if cell.position_x >= grid_size*4/5:
+        if ((cell.position_x >= grid_size*19/20 or cell.position_x <= grid_size/20) or (cell.position_y >= grid_size*19/20 or cell.position_y <= grid_size/20)) and cell.feed == True:
             survivors.append(cell)
-
+    print(len(survivors))
     return survivors
 
 """#NOT IN USE
@@ -241,8 +339,19 @@ def reproduce(def_reproduced_cells: list[Cell_Class]) -> list[Cell_Class]:
 # Creates a random x_pos and y_pos for a single cell use
 def randomize_position() -> set[int]:
 
-    x_pos = random.randint(0, grid_size * 10 - 1)
-    y_pos = random.randint(0, grid_size * 10 - 1)
+    spawn_location_chance = random.randint(0, 3)
+    if spawn_location_chance == 0:
+        x_pos = random.randint(grid_size//20*19, grid_size-1)
+        y_pos = random.randint(0, grid_size-1)
+    elif spawn_location_chance == 1:
+        x_pos = random.randint(0, grid_size//20)
+        y_pos = random.randint(0, grid_size-1)  
+    elif spawn_location_chance == 2:
+        x_pos = random.randint(0, grid_size-1)  
+        y_pos = random.randint(0, grid_size//20)
+    else:
+        x_pos = random.randint(0, grid_size-1)
+        y_pos = random.randint(grid_size//20*19, grid_size-1)
 
     return  (x_pos, y_pos)
 
@@ -280,10 +389,30 @@ def create_scaled_cells(new_blue_count, new_orange_count, new_red_count, new_gre
                     break  
 
     return created_scaled_cells
-       
+
+# Food creation at the beginning of each generation
+def create_food(def_start_generation: list[list[int]]) -> list[list[int]]:
+    # They can only be created in the middle, so non-spawn zone for cells
+    for x in range(grid_size//20, grid_size//20*19):
+        for y in range(grid_size//20, grid_size//20*19):
+            # Food creation chance
+            if random.randint(1, 100) < food_creation_chance and def_start_generation[x][y] == 0:
+                def_start_generation[x][y] = 7
+
+    return def_start_generation
+
+# Draw the created food
+def draw_food(def_start_generation: list[list[int]]):
+
+    for x in range(grid_size):
+        for y in range(grid_size):
+            if def_start_generation[x][y] == 7:
+                pygame.draw.rect(screen, PURPLE, (x*10+1, y*10+1, 9, 9))
+
 counter: int = 0
 # Main loop
 while True:
+    
     while running:
 
         # Closing the display with ESC or Quit 
@@ -295,11 +424,19 @@ while True:
         screen.fill((255, 255, 255))
 
         # Zone where the cells could live to the other generations
-        pygame.draw.rect(screen, (255, 255, 0), (grid_size*8, 0, display_size-grid_size, grid_size*10))
+        pygame.draw.rect(screen, (255, 255, 0), (grid_size*19/2, 0, display_size-grid_size*9, grid_size*10))
+        pygame.draw.rect(screen, (255, 255, 0), (0, 0, display_size-grid_size*19/2, grid_size*10))
+        pygame.draw.rect(screen, (255, 255, 0), (0, grid_size*19/2, grid_size*10 , display_size-grid_size*19/2))
+        pygame.draw.rect(screen, (255, 255, 0), (0, 0, grid_size*10, display_size-grid_size*19/2))
+
         # Grid of the display
         [pygame.draw.line(screen, (0, 0, 0), (x, 0), (x, 800)) for x in range(10, display_size, 10)]
         [pygame.draw.line(screen, (0, 0, 0), (0, y), (800, y)) for y in range(10, display_size, 10)]
 
+        if counter == 1:
+            start_generation = create_food(start_generation)
+        draw_food(start_generation)
+        
         # Display the start generation at the beginning
         draw(origin_cells)
 
@@ -311,9 +448,9 @@ while True:
         # Update the display
         pygame.display.update()
 
-        # Stops the generation after 10 rounds
+        # Stops the generation after 100 rounds
         counter += 1
-        if counter > 10:
+        if counter > round_limit:
             running = False
 
     # Find the survivors
@@ -341,6 +478,5 @@ while True:
                 waiting_for_restart = False  
                 pygame.quit()
                 exit()
-
 
 

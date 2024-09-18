@@ -1,18 +1,9 @@
 
-# TODO: Refactor this function to improve performance
-# ! This is a critical section of the code
-# ? Does this logic make sense here?
-# * Deprecated: No longer using this function
-# This is a standard comment
-
-
-
 # Libraries from general
 import pygame
 
 # Imported files
 from config import Config
-
 
 
 # A class "Visualizer" for the display, drawing and pygame 

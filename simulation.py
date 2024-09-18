@@ -1,12 +1,4 @@
 
-# TODO: Refactor this function to improve performance
-# ! This is a critical section of the code
-# ? Does this logic make sense here?
-# * Deprecated: No longer using this function
-# This is a standard comment
-
-
-
 # Libraries from general
 import random
 
@@ -115,10 +107,13 @@ class Simulation:
         Generates food at random positions in the grid outside the yellow-spawn-zone.
         Food is placed only in unoccupied cells based on a defined food creation chance.
         """
+
+        # Clear all the previous food, to create a new food for the next generation
+        self.clear_food()
         
         # Creating of the food must be out of the yellow zone
-        for x in range(self.config.grid_size // 20, self.config.grid_size // 20 * 19):
-            for y in range(self.config.grid_size // 20, self.config.grid_size // 20 * 19):
+        for x in range(self.config.grid_size // 20+1, self.config.grid_size // 20 * 19-1):
+            for y in range(self.config.grid_size // 20+1, self.config.grid_size // 20 * 19-1):
                 
                 # According to food_creating chance, if the position is unoccupied(=0), create a food(=9)
                 if random.randint(1, 100) < self.config.food_creation_chance and self.matrix[x][y] == self.config.matrix_empty:
@@ -187,12 +182,38 @@ class Simulation:
             exit()
     
     # Update the matrix
-    def matrix_update(self) -> None:
+    def matrix_cells_update(self) -> None:
         """
         Updates the matrix to reflect the new state of the simulation.
-        Resets the positions of any food cells that have been consumed (marked as empty).
+        Resets the positions of any  cells.
+        """
+        for x in range(self.config.grid_size):
+            for y in range(self.config.grid_size):
+                if self.matrix[x][y] == self.config.matrix_cell_exist:
+                    self.matrix[x][y] == self.config.matrix_empty      
+
+    # Clears food from the matrix, when a new generation is borned
+    def clear_food(self) -> None:
+        """
+        Clears all food from the matrix.
         """
         for x in range(self.config.grid_size):
             for y in range(self.config.grid_size):
                 if self.matrix[x][y] == self.config.matrix_food_exist:
-                    self.matrix[x][y] == self.config.matrix_empty
+                    self.matrix[x][y] = self.config.matrix_empty
+
+        """    
+        def food_count(self):
+        count = 0
+        for x in range(self.config.grid_size):
+            for y in range(self.config.grid_size):
+                if self.matrix[x][y] == self.config.matrix_food_exist:
+                    count += 1   
+        print(f"Food count: {count}")
+        """
+
+    def matrix_surviving_zone_update(self) -> None:
+        for x in range(self.config.grid_size):
+            for y in range(self.config.grid_size):
+                if (x, y) in self.config.surviving_zones:
+                    self.matrix == self.config.matrix_surviving_zone_exist

@@ -1,12 +1,4 @@
 
-# TODO: Refactor this function to improve performance
-# ! This is a critical section of the code
-# ? Does this logic make sense here?
-# * Deprecated: No longer using this function
-# This is a standard comment
-
-
-
 # Libraries from general
 import random
 
@@ -221,7 +213,6 @@ class Cell:
         This is called when the cell consumes food to survive.
         """
         self.food_supply -= 1
-        print(self.food_supply)
 
 
 

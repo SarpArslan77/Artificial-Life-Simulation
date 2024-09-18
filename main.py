@@ -1,12 +1,7 @@
 
-# TODO: Refactor this function to improve performance
-# ! This is a critical section of the code
-# ? Does this logic make sense here?
-# * Deprecated: No longer using this function
-# This is a standard comment
-
-#TODO: Compare the main loop to evolution.py main loop to find the differences(especially the restart condition)
-#TODO: check the new_generation variable and the reproduce function, it seems like they are not being used in the loop rn
+#TODO: save the stats to a cvc, to be able to examine them later on
+#TODO : add the surviving_zones(=5) to simulation.matrix to later add surviving_zone_sense
+#TODO : add levels of speed to cells
 
 # General libraries
 import pygame
@@ -16,78 +11,98 @@ from config import Config
 from cell import Cell
 from simulation import Simulation
 from visualization import Visualization
+from stats import Stats
 
-# Main function
-def main():
+# Create instances
+config = Config()
+simulation = Simulation(config)
+visualization = Visualization(config)
+stats = Stats(config)
+
+# Main loop
+if __name__ == "__main__":
 
     # Initialize pygame
     pygame.init()
-
-    # Create instances
-    config = Config()
-    simulation = Simulation(config)
-    visualization = Visualization(config)
-
-    # running boolean to stop the loop, when ESC or QUIT pressed
-    running: bool = True
-
+    
     # clock for the delay
     clock = pygame.time.Clock()
+    
+    while simulation.main_loop:
 
-    # counter to count each round
-    counter: int = 0
 
-    # Create the food
-    simulation.create_food()
+        # counter to count each round
+        counter: int = 0
 
-    # Main loop
-    while running:
+        # clear all the previous food
+        simulation.clear_food()
 
-        # If ESC or QUIT is pressed, the simulation ends
-        for event in pygame.event.get():
-            if (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE) or event.type == pygame.QUIT:
-                running = False
+        # create newly fresh food for each round
+        simulation.create_food()
 
-        # Update simulation
-        simulation.update()
+        #!DOENST WORK, ADD IT DIRECTLY TO PREVIOUS POSITION MARKERS(=0) mark the positions of surviving_zones(yellow zones) in the matrix(=5)
+        simulation.matrix_surviving_zone_update()
+        
+        # Use one food from food_supply for each cell, at the beginning of the round
+        for cell in simulation.cells:
+            cell.use_food()
+        print(simulation.matrix)
+        # Main loop
+        while simulation.running:
+            
+            # If ESC or QUIT is pressed, the simulation ends
+            for event in pygame.event.get():
+                if (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE) or event.type == pygame.QUIT:
+                    simulation.running = False
+                    simulation.main_loop = False
+            
+            # Update cell simulation
+            simulation.cell_update()
+            
+            # Draw everything
+            visualization.draw(simulation)
+           
+            # Update display
+            pygame.display.update()
+            
+            # Control frame rate
+            clock.tick(config.simulation_speed)
+            
+            # Increment counter and check for round limit
+            counter += 1
+            if counter > config.round_limit:
+                config.generation_count += 1
+                simulation.running = False
+        
+        # Update and display stats after each generation
+        stats.update(simulation.cells)
+        stats.display_average_food_sense()
+        
+        # Surviving cells are determined and reproduced to next generations
+        simulation.survive_cells()
+        simulation.reproduce_cells(simulation.cells)
 
-        # Draw everything
-        visualization.draw(simulation)
-
-        # Update display
-        pygame.display.update()
-
-        # Control frame rate
-        clock.tick(config.delay_amount)
-
-        # Increment counter and check for round limit
-        counter += 1
-        if counter > config.round_limit:
-            running = False
-
-    # Game over logic
-    survivors = simulation.survive_cells()
-    new_generation = simulation.reproduce_cells(survivors)
-
-    # Ask for restart or quit
-    waiting_for_restart = True
-    while waiting_for_restart:
-        for event in pygame.event.get():
-            # If SPACE is pressed, the simulation goes onto the next generation
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    main()  # Restart the simulation
-
-            # If ESC ord QUIT is pressed, it should end the simulation
-                elif event.key == pygame.K_ESCAPE:
+        # Update the matrix according to new cells
+        simulation.matrix_cells_update()
+       
+        # Ask for restart or quit
+        waiting_for_restart = True
+        while waiting_for_restart:
+            for event in pygame.event.get():
+                
+                # If SPACE is pressed, the simulation goes onto the next generation
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        waiting_for_restart = False  # Restart the simulation
+                        simulation.running = True
+                
+                # If ESC or QUIT is pressed, it should end the simulation
+                    elif event.key == pygame.K_ESCAPE:
+                        waiting_for_restart = False
+                        simulation.main_loop = False
+                elif event.type == pygame.QUIT:
                     waiting_for_restart = False
-            elif event.type == pygame.QUIT:
-                waiting_for_restart = False
-
+                    simulation.main_loop = False
+    
     # End the pygame display
     pygame.quit()
-
-# Extra precaution to check, whether this file is the main file to run the simulation
-if __name__ == "__main__":
-    # Show time baby
-    main()

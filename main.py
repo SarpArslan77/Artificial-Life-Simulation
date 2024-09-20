@@ -1,14 +1,18 @@
 
 #TODO: save the stats to a cvc, to be able to examine them later on
-#TODO : add the surviving_zones(=5) to simulation.matrix to later add surviving_zone_sense
-#TODO : add levels of speed to cells
+#TODO: speed levels result in the cell jumping and not actually moving 2-3 blocks per round
+#TODO: check the food_supply and use_food logic and add a stat for the food_supply and energy consumption
+#! Energy consumption logic has unexpected results, check those mechanisms
+#! High speed causes the cells to jump over occupied blocks, it should check whether the way is unoccupied first
+#! Some cells stop moving when they reach the border of the suriviving zones
+#! Some cells stop in the middle
 
 # General libraries
 import pygame
+import sys
 
 # Imported files
 from config import Config
-from cell import Cell
 from simulation import Simulation
 from visualization import Visualization
 from stats import Stats
@@ -27,7 +31,7 @@ if __name__ == "__main__":
     
     # clock for the delay
     clock = pygame.time.Clock()
-    
+
     while simulation.main_loop:
 
 
@@ -40,13 +44,15 @@ if __name__ == "__main__":
         # create newly fresh food for each round
         simulation.create_food()
 
-        #!DOENST WORK, ADD IT DIRECTLY TO PREVIOUS POSITION MARKERS(=0) mark the positions of surviving_zones(yellow zones) in the matrix(=5)
+        # update the surviving_zone_update at the beginning of each generation
         simulation.matrix_surviving_zone_update()
-        
+
         # Use one food from food_supply for each cell, at the beginning of the round
+        #       also update the cell.can_move to True for each round
         for cell in simulation.cells:
-            cell.use_food()
-        print(simulation.matrix)
+            [cell.use_food() for _ in range(cell.energy_consumption)]
+            cell.can_move = True
+
         # Main loop
         while simulation.running:
             
@@ -55,7 +61,7 @@ if __name__ == "__main__":
                 if (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE) or event.type == pygame.QUIT:
                     simulation.running = False
                     simulation.main_loop = False
-            
+
             # Update cell simulation
             simulation.cell_update()
             
@@ -76,7 +82,7 @@ if __name__ == "__main__":
         
         # Update and display stats after each generation
         stats.update(simulation.cells)
-        stats.display_average_food_sense()
+        stats.display_average_stats()
         
         # Surviving cells are determined and reproduced to next generations
         simulation.survive_cells()
@@ -106,3 +112,5 @@ if __name__ == "__main__":
     
     # End the pygame display
     pygame.quit()
+    # To be sure, end the whole programm
+    sys.exit()

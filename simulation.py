@@ -47,9 +47,13 @@ class Simulation:
 
                     # Secondly create the new_cell in the "Cell" class
                     new_cell = Cell(x, y, self.config, lambda: self.matrix)
+                    print(new_cell.position_x, new_cell.position_y)
 
                     # Finally add the "new_cell" to the "cells" list
                     self.cells.append(new_cell)
+
+                    # Add the starting position fo visited_positions, to be able to fully go back to its starting position
+                    new_cell.visited_positions.append((new_cell.position_x, new_cell.position_y))
 
                     # Sidequest: Add the coordinates to a positions_cells list for check_occupancy function
                     self.positions_cells.append((x, y))
@@ -70,15 +74,19 @@ class Simulation:
         spawn_location = random.randint(1, 4)
         
         # All the x , y coordinates must be in the yellow-spawn-zone
+        # EAST
         if spawn_location == 1:
             random_x = random.randint(self.config.grid_size // 20 * 19, self.config.grid_size - 1)
             random_y = random.randint(0, self.config.grid_size - 1)
+        # WEST
         elif spawn_location == 2:
-            random_x = random.randint(0, self.config.grid_size // 20)
+            random_x = random.randint(0, self.config.grid_size // 20 - 1)
             random_y = random.randint(0, self.config.grid_size - 1)
+        # NORTH
         elif spawn_location == 3:
             random_x = random.randint(0, self.config.grid_size - 1)
-            random_y = random.randint(0, self.config.grid_size // 20)            
+            random_y = random.randint(0, self.config.grid_size // 20 - 1)      
+        # SOUTH      
         else:
             random_x = random.randint(0, self.config.grid_size - 1)
             random_y = random.randint(self.config.grid_size // 20 * 19, self.config.grid_size - 1)
@@ -99,7 +107,8 @@ class Simulation:
         Iterates through all cells in the simulation and moves them according to their movement logic.
         """
         for cell in self.cells:
-            cell.move_cell()
+            if cell.can_move:
+                cell.move_cell()
 
     # Create the foods at the beginning of each generation
     def create_food(self) -> None:
@@ -152,9 +161,16 @@ class Simulation:
         if survivors:
             for parent in survivors:
             
-                # Randomize the position of the surviving cell(is parent to possible 2 other cells)
-                parent.position_x, parent.position_y = self.cells_random_position()
+                # Randomize the position of the surviving cell, until the newly created position is unoccupied
+                #       (is parent to possible 2 other cells) and update its location to the matrix
+                while True:
+                    parent.position_x, parent.position_y = self.cells_random_position()
+                    if self.matrix[parent.position_x][parent.position_y] == self.config.matrix_empty:
+                        break
+
+                # If it is unoccupied, use the positions
                 new_generation.append(parent)
+                self.matrix[parent.position_x][parent.position_y] = self.config.matrix_cell_exist
             
                 # According to reproduce_chance the parent can have offsprings
                 #* random.random() without any parameters produce a float between 0 and 1
@@ -163,14 +179,19 @@ class Simulation:
                     # Create 2 offsprings
                     for _ in range(2):
                         
-                        # First create a randomly placed offspring
+                        # First create a randomly placed offspring and update its location to the matrix
                         #* "*"(Asterisk) unpacks the cells_random_position function to position_x , position_y
                         offspring = Cell(*self.cells_random_position(), self.config, lambda: self.matrix)
+                        self.matrix[offspring.position_x][offspring.position_y] = self.config.matrix_cell_exist
+
+                        # Add the starting position fo visited_positions, to be able to fully go back to its starting position
+                        offspring.visited_positions.append((offspring.position_x, offspring.position_y))
                     
-                        # food_sense and zone_sense must be inherited from the parent cell
+                        # food_sense, zone_sense and speed must be inherited from the parent cell
                         #   for that, they get changed after the cell is created
                         offspring.food_sense = parent.food_sense
                         offspring.zone_sense = parent.zone_sense
+                        offspring.speed = parent.speed
                         new_generation.append(offspring)
             
             # Updates the self.cells to new_generation
@@ -200,20 +221,21 @@ class Simulation:
         for x in range(self.config.grid_size):
             for y in range(self.config.grid_size):
                 if self.matrix[x][y] == self.config.matrix_food_exist:
-                    self.matrix[x][y] = self.config.matrix_empty
+                    self.matrix[x][y] = self.config.matrix_empty 
 
-        """    
-        def food_count(self):
-        count = 0
-        for x in range(self.config.grid_size):
-            for y in range(self.config.grid_size):
-                if self.matrix[x][y] == self.config.matrix_food_exist:
-                    count += 1   
-        print(f"Food count: {count}")
-        """
-
+    # update the matrix according to surviving_zones(yellow zones=5)
     def matrix_surviving_zone_update(self) -> None:
+        """
+        Updates the matrix cells that are part of the surviving zones.
+
+        For each (x, y) coordinate in the grid, if the cell is in the 
+        `surviving_zones`, its value is updated to `matrix_surviving_zone_exist`.
+        
+        Returns:
+            None
+        """
         for x in range(self.config.grid_size):
             for y in range(self.config.grid_size):
                 if (x, y) in self.config.surviving_zones:
-                    self.matrix == self.config.matrix_surviving_zone_exist
+                    self.matrix[x][y] = self.config.matrix_surviving_zone_exist
+        
